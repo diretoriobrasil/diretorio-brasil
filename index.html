@@ -1,0 +1,1709 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Diretório Brasil — Comércios Locais, Marketplaces e Influenciadores</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase JS SDK v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Fonte Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fadeIn 0.22s ease-out forwards; }
+    /* Honeypot invisível para humanos */
+    .hp-field-trap {
+      opacity: 0;
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 0;
+      width: 0;
+      z-index: -1;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans pb-24 md:pb-10 selection:bg-amber-300 selection:text-emerald-950">
+
+  <!-- TOAST CONTAINER (Sem alert/confirm nativo) -->
+  <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 md:px-0"></div>
+
+  <!-- HEADER FIXO -->
+  <header class="sticky top-0 z-40 bg-emerald-900 text-white shadow-lg border-b-4 border-amber-400">
+    <div class="max-w-6xl mx-auto px-4 py-3.5 flex justify-between items-center">
+      <!-- Identidade Visual -->
+      <div class="flex items-center gap-3 cursor-pointer" onclick="alternarAba('busca')">
+        <div class="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center text-emerald-950 shadow-md shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 stroke-[2.2]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11m16-11v11M8 14v3m4-3v3m4-3v3"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg md:text-xl font-extrabold tracking-tight text-white leading-none">
+              Diretório <span class="text-amber-400">Brasil</span>
+            </h1>
+            <span id="badge-status-mod" class="hidden text-[10px] font-extrabold uppercase tracking-wider bg-amber-400 text-emerald-950 px-2 py-0.5 rounded-full">
+              Modo Moderador
+            </span>
+          </div>
+          <p class="text-xs text-emerald-200 mt-0.5 hidden sm:block">Comércios Locais, Marketplaces e Criadores</p>
+        </div>
+      </div>
+
+      <!-- Navegação Desktop -->
+      <nav class="hidden md:flex items-center gap-2.5">
+        <button id="btn-desk-busca" onclick="alternarAba('busca')" class="px-4 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 bg-emerald-800 text-white ring-2 ring-amber-400/80">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          Explorar Diretório
+        </button>
+
+        <button id="btn-desk-cadastro" onclick="alternarAba('cadastro')" class="px-4 py-2.5 rounded-xl font-bold text-sm transition flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-emerald-950 shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+          </svg>
+          Enviar Cadastro
+        </button>
+
+        <!-- 3ª Aba Exclusiva do Moderador (Desktop) -->
+        <button id="btn-desk-moderacao" onclick="alternarAba('moderacao')" class="hidden px-4 py-2.5 rounded-xl font-bold text-sm transition items-center gap-2 bg-emerald-950/70 hover:bg-emerald-950 text-amber-300 border border-amber-400/40">
+          <span>🛡️ Moderação</span>
+          <span id="badge-desk-pendentes" class="px-2 py-0.5 text-xs rounded-full bg-amber-400 text-emerald-950 font-extrabold">0</span>
+        </button>
+      </nav>
+
+      <!-- Indicadores Mobile no Topo -->
+      <div class="md:hidden flex items-center gap-2">
+        <span id="badge-topo-mobile" class="text-xs font-bold bg-emerald-800 text-amber-300 border border-emerald-700 px-2.5 py-1 rounded-full">
+          0 ativos
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <main class="max-w-6xl mx-auto px-4 py-5 md:py-8 flex-grow w-full">
+
+    <!-- ==========================================
+         ABA 1: EXPLORAR E FILTRAR DIRETÓRIO PÚBLICO
+    =========================================== -->
+    <section id="aba-busca" class="space-y-6 animate-fade-in">
+
+      <!-- Hero & Pills de Modalidade -->
+      <div class="bg-gradient-to-br from-emerald-900 via-emerald-800 to-green-900 rounded-2xl p-5 md:p-6 text-white shadow-md border border-emerald-700">
+        <div class="max-w-3xl">
+          <h2 class="text-lg md:text-2xl font-extrabold text-white leading-snug">
+            Rede colaborativa de comércios locais, lojas online e criadores
+          </h2>
+          <p class="text-xs md:text-sm text-emerald-100 mt-1">
+            Pesquise por estado e município ou explore marketplaces e influenciadores de alcance nacional. Todos os cadastros passam por curadoria colaborativa.
+          </p>
+        </div>
+
+        <!-- PILLS DE MODALIDADE -->
+        <div class="mt-5 flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+          <button onclick="selecionarModalidadeFiltro('todos')" id="pill-todos" class="pill-btn shrink-0 px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm transition flex items-center gap-2 bg-amber-400 text-emerald-950 shadow-sm">
+            <span>🌟 Todos</span>
+            <span id="count-todos" class="px-1.5 py-0.5 text-[11px] rounded-md bg-emerald-950/15 text-emerald-950">0</span>
+          </button>
+
+          <button onclick="selecionarModalidadeFiltro('local')" id="pill-local" class="pill-btn shrink-0 px-4 py-2.5 rounded-xl font-semibold text-xs md:text-sm transition flex items-center gap-2 bg-emerald-950/50 hover:bg-emerald-950/80 text-emerald-100 border border-emerald-700/70">
+            <span>🏪 Comércios Locais</span>
+            <span id="count-local" class="px-1.5 py-0.5 text-[11px] rounded-md bg-emerald-800 text-amber-300">0</span>
+          </button>
+
+          <button onclick="selecionarModalidadeFiltro('marketplace')" id="pill-marketplace" class="pill-btn shrink-0 px-4 py-2.5 rounded-xl font-semibold text-xs md:text-sm transition flex items-center gap-2 bg-emerald-950/50 hover:bg-emerald-950/80 text-emerald-100 border border-emerald-700/70">
+            <span>🛒 Marketplaces & Online</span>
+            <span id="count-marketplace" class="px-1.5 py-0.5 text-[11px] rounded-md bg-emerald-800 text-amber-300">0</span>
+          </button>
+
+          <button onclick="selecionarModalidadeFiltro('influenciador')" id="pill-influenciador" class="pill-btn shrink-0 px-4 py-2.5 rounded-xl font-semibold text-xs md:text-sm transition flex items-center gap-2 bg-emerald-950/50 hover:bg-emerald-950/80 text-emerald-100 border border-emerald-700/70">
+            <span>📢 Influenciadores</span>
+            <span id="count-influenciador" class="px-1.5 py-0.5 text-[11px] rounded-md bg-emerald-800 text-amber-300">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Painel de Filtros (IBGE UF + Município + Segmento + Busca) -->
+      <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200">
+        <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700">Filtros de Localização e Nicho</h3>
+          </div>
+          <span id="aviso-alcance-filtro" class="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg hidden">
+            💡 Exibindo opções regionais e também de alcance nacional
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div>
+            <label for="filtro-uf" class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Estado (UF)</label>
+            <select id="filtro-uf" onchange="carregarCidades('filtro')" class="w-full border border-slate-300 rounded-xl p-3 text-sm bg-white text-slate-800 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-none transition">
+              <option value="">🇧🇷 Todo o Brasil</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="filtro-cidade" class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Município</label>
+            <select id="filtro-cidade" onchange="renderizarLista()" disabled class="w-full border border-slate-200 rounded-xl p-3 text-sm bg-slate-100 text-slate-500 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-none transition disabled:cursor-not-allowed">
+              <option value="">Selecione o Estado</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="filtro-categoria" class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Segmento / Nicho</label>
+            <select id="filtro-categoria" onchange="renderizarLista()" class="w-full border border-slate-300 rounded-xl p-3 text-sm bg-white text-slate-800 font-medium focus:ring-2 focus:ring-emerald-600 focus:outline-none transition">
+              <option value="">Todos os Segmentos</option>
+              <option value="Alimentação & Gastronomia">Alimentação & Gastronomia</option>
+              <option value="Moda, Vestuário & Acessórios">Moda, Vestuário & Acessórios</option>
+              <option value="Livrarias, Cultura & Educação">Livrarias, Cultura & Educação</option>
+              <option value="Tecnologia & Eletrônicos">Tecnologia & Eletrônicos</option>
+              <option value="Serviços & Profissionais">Serviços & Profissionais</option>
+              <option value="Comunicação, Política & Notícias">Comunicação, Política & Notícias</option>
+              <option value="Saúde, Beleza & Bem-estar">Saúde, Beleza & Bem-estar</option>
+              <option value="Casa, Decoração & Artesanato">Casa, Decoração & Artesanato</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="filtro-texto" class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Buscar por Nome ou @</label>
+            <div class="relative">
+              <input type="text" id="filtro-texto" oninput="renderizarLista()" placeholder="Ex: Padaria, Shopee, @perfil..." class="w-full border border-slate-300 rounded-xl pl-9 pr-3 py-3 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none transition">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 absolute left-3 top-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div id="box-incluir-nacionais" class="mt-3 pt-3 border-t border-slate-100 hidden flex-wrap items-center justify-between gap-2">
+          <label class="inline-flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer select-none">
+            <input type="checkbox" id="check-incluir-nacionais" checked onchange="renderizarLista()" class="rounded text-emerald-700 focus:ring-emerald-600 w-4 h-4 accent-emerald-700">
+            <span>Exibir também Marketplaces e Influenciadores sem estado fixo (Alcance Nacional)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Barra de Status dos Resultados -->
+      <div class="flex flex-wrap justify-between items-center gap-2 px-1">
+        <span id="contador-resultados" class="text-sm font-bold text-slate-700">Carregando diretório...</span>
+        <button onclick="limparFiltros()" class="text-xs font-bold text-emerald-900 hover:text-emerald-950 bg-amber-300/70 hover:bg-amber-300 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Limpar Filtros
+        </button>
+      </div>
+
+      <!-- GRID DE CARDS APROVADOS -->
+      <div id="lista-comercios" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5"></div>
+    </section>
+
+    <!-- ==========================================
+         ABA 2: PAINEL DE CADASTRO COM ANTI-SPAM
+    =========================================== -->
+    <section id="aba-cadastro" class="hidden max-w-2xl mx-auto animate-fade-in">
+      <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
+
+        <div class="bg-emerald-900 text-white p-5 md:p-6 border-b-4 border-amber-400">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="inline-block text-[11px] font-extrabold uppercase tracking-wider bg-amber-400 text-emerald-950 px-2.5 py-0.5 rounded-md">
+              Colaboração Aberta
+            </span>
+            <span class="text-[11px] text-emerald-200 font-medium">🔒 Protegido contra Spam</span>
+          </div>
+          <h2 id="titulo-form-cadastro" class="text-xl md:text-2xl font-extrabold">Sugerir Cadastro no Diretório</h2>
+          <p class="text-xs md:text-sm text-emerald-100 mt-1">
+            Envie um comércio local, loja de marketplace ou influenciador. Para evitar spam, todo envio passa pela aprovação dos colaboradores antes de ficar público.
+          </p>
+        </div>
+
+        <form id="form-cadastro" onsubmit="salvarCadastro(event)" class="p-5 md:p-6 space-y-5 relative">
+          <input type="hidden" id="cad-edit-id" value="">
+
+          <!-- CAMADA ANTI-SPAM 1: HONEYPOT INVISÍVEL PARA BOTS -->
+          <div class="hp-field-trap" aria-hidden="true">
+            <label for="cad-website-confirm">Não preencha este campo se você for humano</label>
+            <input type="text" id="cad-website-confirm" name="website_url_confirm" tabindex="-1" autocomplete="off">
+          </div>
+
+          <!-- 1. SELETOR DE MODALIDADE -->
+          <div>
+            <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-600 mb-2">
+              1. Escolha a Modalidade *
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <button type="button" onclick="mudarTipoCadastro('local')" id="btn-tipo-local" class="p-3.5 rounded-xl border-2 border-emerald-700 bg-emerald-50/70 text-left transition flex sm:flex-col items-center sm:items-start gap-3 sm:gap-1.5 ring-2 ring-amber-400">
+                <span class="text-2xl">🏪</span>
+                <div>
+                  <div class="font-bold text-sm text-emerald-950">Comércio Local</div>
+                  <div class="text-[11px] text-slate-600 leading-tight">Loja física, serviço, restaurante</div>
+                </div>
+              </button>
+
+              <button type="button" onclick="mudarTipoCadastro('marketplace')" id="btn-tipo-marketplace" class="p-3.5 rounded-xl border-2 border-slate-200 hover:border-emerald-400 bg-white text-left transition flex sm:flex-col items-center sm:items-start gap-3 sm:gap-1.5">
+                <span class="text-2xl">🛒</span>
+                <div>
+                  <div class="font-bold text-sm text-slate-800">Marketplace / Online</div>
+                  <div class="text-[11px] text-slate-500 leading-tight">Shopee, Mercado Livre, Site</div>
+                </div>
+              </button>
+
+              <button type="button" onclick="mudarTipoCadastro('influenciador')" id="btn-tipo-influenciador" class="p-3.5 rounded-xl border-2 border-slate-200 hover:border-emerald-400 bg-white text-left transition flex sm:flex-col items-center sm:items-start gap-3 sm:gap-1.5">
+                <span class="text-2xl">📢</span>
+                <div>
+                  <div class="font-bold text-sm text-slate-800">Influenciador</div>
+                  <div class="text-[11px] text-slate-500 leading-tight">Criador, canal, perfil social</div>
+                </div>
+              </button>
+            </div>
+            <input type="hidden" id="cad-tipo" value="local">
+          </div>
+
+          <!-- 2. DADOS PRINCIPAIS -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+            <div class="md:col-span-2">
+              <label id="label-cad-nome" for="cad-nome" class="block text-sm font-bold text-slate-700 mb-1">
+                Nome do Estabelecimento *
+              </label>
+              <input type="text" id="cad-nome" required maxlength="100" placeholder="Ex: Livraria e Café Central" class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+            </div>
+
+            <div>
+              <label for="cad-categoria" class="block text-sm font-bold text-slate-700 mb-1">
+                Segmento / Nicho *
+              </label>
+              <select id="cad-categoria" required class="w-full border border-slate-300 rounded-xl p-3 text-sm bg-white focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                <option value="">Selecione um segmento...</option>
+                <option value="Alimentação & Gastronomia">Alimentação & Gastronomia</option>
+                <option value="Moda, Vestuário & Acessórios">Moda, Vestuário & Acessórios</option>
+                <option value="Livrarias, Cultura & Educação">Livrarias, Cultura & Educação</option>
+                <option value="Tecnologia & Eletrônicos">Tecnologia & Eletrônicos</option>
+                <option value="Serviços & Profissionais">Serviços & Profissionais</option>
+                <option value="Comunicação, Política & Notícias">Comunicação, Política & Notícias</option>
+                <option value="Saúde, Beleza & Bem-estar">Saúde, Beleza & Bem-estar</option>
+                <option value="Casa, Decoração & Artesanato">Casa, Decoração & Artesanato</option>
+              </select>
+            </div>
+
+            <div id="box-subtipo-plataforma" class="hidden">
+              <label id="label-cad-plataforma" for="cad-plataforma" class="block text-sm font-bold text-slate-700 mb-1">
+                Plataforma Principal *
+              </label>
+              <select id="cad-plataforma" class="w-full border border-slate-300 rounded-xl p-3 text-sm bg-white focus:ring-2 focus:ring-emerald-600 focus:outline-none"></select>
+            </div>
+
+            <div id="box-contato" class="md:col-span-1">
+              <label id="label-cad-contato" for="cad-contato" class="block text-sm font-bold text-slate-700 mb-1">
+                Instagram, WhatsApp ou Link *
+              </label>
+              <input type="text" id="cad-contato" required maxlength="180" placeholder="Ex: @cafecentral ou https://..." class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+            </div>
+          </div>
+
+          <!-- 3. LOCALIZAÇÃO IBGE -->
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-1">
+              <span id="titulo-secao-local" class="text-xs font-extrabold uppercase tracking-wider text-emerald-900">
+                📍 Localização Física (Obrigatória)
+              </span>
+              <span id="badge-opcional-local" class="hidden text-[11px] font-semibold bg-amber-200 text-amber-950 px-2 py-0.5 rounded">
+                Opcional (Em branco = Alcance Nacional)
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label for="cad-uf" class="block text-xs font-bold text-slate-600 mb-1">
+                  Estado (UF) <span id="ast-uf" class="text-red-600">*</span>
+                </label>
+                <select id="cad-uf" required onchange="carregarCidades('cadastro')" class="w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                  <option value="">Selecione o Estado</option>
+                </select>
+              </div>
+              <div>
+                <label for="cad-cidade" class="block text-xs font-bold text-slate-600 mb-1">
+                  Município <span id="ast-cidade" class="text-red-600">*</span>
+                </label>
+                <select id="cad-cidade" required disabled class="w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-slate-100 focus:ring-2 focus:ring-emerald-600 focus:outline-none disabled:cursor-not-allowed">
+                  <option value="">Selecione o Estado primeiro</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="box-cad-endereco">
+              <label for="cad-endereco" class="block text-xs font-bold text-slate-600 mb-1">
+                Bairro / Endereço Comercial
+              </label>
+              <input type="text" id="cad-endereco" maxlength="160" placeholder="Ex: Rua Augusta, 1200 - Centro" class="w-full border border-slate-300 rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+            </div>
+          </div>
+
+          <!-- 4. DESCRIÇÃO -->
+          <div>
+            <label for="cad-descricao" class="block text-sm font-bold text-slate-700 mb-1">
+              Descrição dos Produtos, Serviços ou Conteúdo *
+            </label>
+            <textarea id="cad-descricao" required rows="3" maxlength="500" placeholder="Descreva brevemente o que o estabelecimento vende ou sobre o que o perfil fala..." class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none"></textarea>
+          </div>
+
+          <!-- CAMADA ANTI-SPAM 2: DESAFIO MATEMÁTICO HUMANO -->
+          <div id="box-desafio-antispam" class="bg-amber-50/90 border border-amber-300 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <div class="text-xs font-extrabold uppercase tracking-wider text-emerald-950 flex items-center gap-1.5">
+                <span>🛡️ Verificação Anti-Robô</span>
+              </div>
+              <p class="text-xs text-slate-600 mt-0.5">
+                Resolva a soma simples ao lado para confirmar seu envio:
+              </p>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+              <span id="label-soma-captcha" class="px-3 py-2 rounded-lg bg-emerald-900 text-amber-300 font-extrabold text-sm tracking-wider shrink-0">
+                4 + 3 = ?
+              </span>
+              <input type="number" id="input-soma-captcha" required placeholder="Resposta" class="w-full sm:w-28 border border-slate-300 rounded-xl p-2.5 text-sm font-bold text-center bg-white focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+            </div>
+          </div>
+
+          <!-- Botões de Ação -->
+          <div class="pt-3 flex flex-col-reverse sm:flex-row justify-end gap-3 border-t border-slate-100">
+            <button type="button" onclick="cancelarEdicaoOuVoltar()" class="w-full sm:w-auto px-5 py-3 border border-slate-300 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-100 transition">
+              Cancelar
+            </button>
+            <button type="submit" id="btn-submit-cadastro" class="w-full sm:w-auto px-6 py-3 bg-amber-400 hover:bg-amber-300 text-emerald-950 font-extrabold rounded-xl text-sm shadow-sm transition flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 stroke-[2.4]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+              <span id="texto-btn-submit">Enviar para Aprovação</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         ABA 3: PAINEL DE MODERAÇÃO E COLABORADORES
+    =========================================== -->
+    <section id="aba-moderacao" class="hidden space-y-6 animate-fade-in">
+      <div class="bg-emerald-950 text-white rounded-2xl p-5 md:p-6 border-b-4 border-amber-400 shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-md bg-amber-400 text-emerald-950 font-extrabold text-[11px] uppercase tracking-wider">
+              Painel de Curadoria
+            </span>
+            <span id="badge-modo-banco" class="px-2.5 py-0.5 rounded-md bg-emerald-800 text-emerald-200 font-semibold text-[11px]">
+              Banco Local
+            </span>
+          </div>
+          <h2 class="text-xl md:text-2xl font-extrabold mt-1">Fila de Moderação & Colaboradores</h2>
+          <p class="text-xs md:text-sm text-emerald-200 mt-0.5">
+            Aprove novos cadastros, revise denúncias ou edite informações diretamente pelo celular ou computador.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          <button onclick="abrirModalGuiaSupabase()" class="flex-1 md:flex-initial px-3.5 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-amber-300 font-bold text-xs transition border border-emerald-700">
+            ⚙️ Configurar Supabase / SQL
+          </button>
+          <button onclick="encerrarSessaoModerador()" class="px-3.5 py-2.5 rounded-xl bg-red-600/90 hover:bg-red-600 text-white font-bold text-xs transition">
+            Sair do Modo Admin
+          </button>
+        </div>
+      </div>
+
+      <!-- Sub-Abas da Moderação -->
+      <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <button onclick="filtrarAbaModeracao('pendente')" id="subtab-pendente" class="px-4 py-2.5 rounded-xl font-extrabold text-xs md:text-sm bg-amber-400 text-emerald-950 shadow-sm flex items-center gap-2 shrink-0">
+          <span>⏳ Fila Pendente</span>
+          <span id="count-mod-pendente" class="px-2 py-0.5 rounded-full bg-emerald-950 text-amber-300 text-xs">0</span>
+        </button>
+
+        <button onclick="filtrarAbaModeracao('denunciado')" id="subtab-denunciado" class="px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 flex items-center gap-2 shrink-0">
+          <span>🚩 Denúncias / Remoção</span>
+          <span id="count-mod-denunciado" class="px-2 py-0.5 rounded-full bg-red-100 text-red-800 text-xs">0</span>
+        </button>
+
+        <button onclick="filtrarAbaModeracao('aprovado')" id="subtab-aprovado" class="px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 flex items-center gap-2 shrink-0">
+          <span>✅ Publicados no Ar</span>
+          <span id="count-mod-aprovado" class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-xs">0</span>
+        </button>
+      </div>
+
+      <!-- Lista de Cards da Moderação -->
+      <div id="lista-moderacao" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </section>
+
+  </main>
+
+  <!-- RODAPÉ COM ACESSO DISCRETO À MODERAÇÃO -->
+  <footer class="bg-emerald-950 text-emerald-300 text-xs py-7 mt-12 border-t border-emerald-800">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
+      <div>
+        <strong class="text-amber-400">Diretório Brasil</strong> — Plataforma comunitária independente integrada aos municípios do IBGE.
+        <p class="text-[11px] text-emerald-400/80 mt-0.5">
+          Dados estritamente comerciais e perfis públicos. Qualquer titular pode solicitar remoção imediata nos cards.
+        </p>
+      </div>
+      <div class="flex items-center gap-4 shrink-0">
+        <button onclick="acaoBotaoRodapeModeracao()" id="btn-rodape-mod" class="text-emerald-300 hover:text-amber-300 underline font-medium transition flex items-center gap-1">
+          <span>🔒 Área da Moderação / Colaboradores</span>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- BARRA DE NAVEGAÇÃO INFERIOR FIXA (MOBILE) -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-emerald-950 text-white border-t-2 border-amber-400 shadow-2xl">
+    <div id="grid-nav-mobile" class="grid grid-cols-2 h-16">
+      <button id="btn-mob-busca" onclick="alternarAba('busca')" class="flex flex-col items-center justify-center gap-1 text-amber-400 font-bold bg-emerald-900/80 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <span class="text-[11px] tracking-wide">Explorar</span>
+      </button>
+
+      <button id="btn-mob-cadastro" onclick="alternarAba('cadastro')" class="flex flex-col items-center justify-center gap-1 text-emerald-200 font-semibold hover:text-white transition">
+        <div class="bg-amber-400 text-emerald-950 rounded-full p-1 -mt-1 shadow">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 stroke-[2.8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+          </svg>
+        </div>
+        <span class="text-[11px] tracking-wide">Cadastrar</span>
+      </button>
+
+      <!-- 3º Botão Mobile: Aparece quando logado como Moderador -->
+      <button id="btn-mob-moderacao" onclick="alternarAba('moderacao')" class="hidden flex-col items-center justify-center gap-1 text-emerald-200 font-semibold hover:text-white transition relative">
+        <span class="text-base leading-none">🛡️</span>
+        <span class="text-[11px] tracking-wide">Moderação</span>
+        <span id="badge-mob-pendentes" class="absolute top-1.5 right-5 px-1.5 py-0.2 text-[10px] rounded-full bg-amber-400 text-emerald-950 font-extrabold">0</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- =====================================================
+       MODAL 1: LOGIN DE MODERADOR / COLABORADOR
+  ====================================================== -->
+  <div id="modal-login" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200 animate-fade-in">
+      <div class="bg-emerald-900 text-white p-5 border-b-4 border-amber-400 flex justify-between items-center">
+        <div>
+          <h3 class="font-extrabold text-lg">Acesso da Moderação</h3>
+          <p class="text-xs text-emerald-200">Exclusivo para curadores e colaboradores</p>
+        </div>
+        <button onclick="fecharModal('modal-login')" class="text-emerald-200 hover:text-white p-1">✕</button>
+      </div>
+
+      <form onsubmit="realizarLoginModerador(event)" class="p-5 space-y-4">
+        <div id="aviso-modo-login" class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950">
+          <!-- Preenchido via JS conforme Supabase ou Modo Local -->
+        </div>
+
+        <div id="box-login-email">
+          <label class="block text-xs font-bold uppercase text-slate-600 mb-1">E-mail do Colaborador (Supabase Auth)</label>
+          <input type="email" id="login-email" placeholder="colaborador@proton.me" class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Senha de Acesso *</label>
+          <input type="password" id="login-senha" required placeholder="••••••••" class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="fecharModal('modal-login')" class="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100">
+            Cancelar
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-amber-300 text-xs font-extrabold shadow-sm">
+            Entrar no Painel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================
+       MODAL 2: SOLICITAR REMOÇÃO OU REPORTAR ERRO
+  ====================================================== -->
+  <div id="modal-reportar" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200 animate-fade-in">
+      <div class="bg-emerald-900 text-white p-5 border-b-4 border-amber-400 flex justify-between items-center">
+        <div>
+          <h3 class="font-extrabold text-lg">Solicitar Remoção / Reportar</h3>
+          <p id="subtitulo-modal-reportar" class="text-xs text-emerald-200 truncate max-w-xs"></p>
+        </div>
+        <button onclick="fecharModal('modal-reportar')" class="text-emerald-200 hover:text-white p-1">✕</button>
+      </div>
+
+      <form onsubmit="enviarSolicitacaoRemocao(event)" class="p-5 space-y-4">
+        <input type="hidden" id="report-item-id" value="">
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Motivo da Solicitação *</label>
+          <select id="report-tipo" required class="w-full border border-slate-300 rounded-xl p-3 text-sm bg-white focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+            <option value="Sou proprietário/titular e desejo remover meu cadastro">Sou o proprietário/titular e desejo remover da lista</option>
+            <option value="Informação incorreta ou comércio fechou">Informação incorreta / Estabelecimento fechou</option>
+            <option value="Cadastro duplicado ou Spam">Cadastro duplicado ou Spam</option>
+            <option value="Outro motivo">Outro motivo</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Detalhes adicionais *</label>
+          <textarea id="report-motivo" required rows="3" maxlength="350" placeholder="Explique brevemente para que os moderadores possam verificar..." class="w-full border border-slate-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="fecharModal('modal-reportar')" class="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100">
+            Cancelar
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-emerald-950 text-xs font-extrabold">
+            Enviar para Moderação
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================
+       MODAL 3: GUIA SQL SUPABASE PARA PRODUÇÃO ANÔNIMA
+  ====================================================== -->
+  <div id="modal-supabase-guia" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200 animate-fade-in">
+      <div class="bg-emerald-900 text-white p-5 border-b-4 border-amber-400 flex justify-between items-center shrink-0">
+        <div>
+          <h3 class="font-extrabold text-lg">Configuração do Banco na Nuvem (Supabase)</h3>
+          <p class="text-xs text-emerald-200">Conecte gratuitamente para produção multi-usuário</p>
+        </div>
+        <button onclick="fecharModal('modal-supabase-guia')" class="text-emerald-200 hover:text-white p-1">✕</button>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-4 text-xs md:text-sm text-slate-700 leading-relaxed">
+        <p>
+          Para que os cadastros enviados por qualquer pessoa do Brasil apareçam na sua fila de moderação, crie um projeto gratuito no <strong>Supabase.com</strong>, cole o código SQL abaixo no menu <strong>SQL Editor</strong> e preencha as constantes <code>SUPABASE_URL</code> e <code>SUPABASE_ANON_KEY</code> no topo do script deste arquivo:
+        </p>
+
+        <div class="bg-slate-900 text-emerald-300 p-4 rounded-xl font-mono text-xs overflow-x-auto">
+<pre>create table diretorio_itens (
+  id bigint generated by default as identity primary key,
+  tipo text not null,
+  nome text not null,
+  categoria text not null,
+  plataforma text,
+  uf text,
+  cidade text,
+  endereco text,
+  contato text not null,
+  descricao text not null,
+  status text default 'pendente',
+  motivo_denuncia text,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+alter table diretorio_itens enable row level security;
+
+-- Qualquer visitante vê apenas itens aprovados (ou moderadores veem tudo)
+create policy "Leitura publica e moderacao" on diretorio_itens
+  for select using (status = 'aprovado' or auth.role() = 'authenticated');
+
+-- Visitantes podem enviar novos cadastros sempre como pendente
+create policy "Envio publico pendente" on diretorio_itens
+  for insert with check (status = 'pendente');
+
+-- Colaboradores autenticados podem aprovar, editar ou excluir
+create policy "Moderadores gerenciam tudo" on diretorio_itens
+  for all using (auth.role() = 'authenticated');</pre>
+        </div>
+
+        <p class="text-xs text-slate-500">
+          Para adicionar novos colaboradores no futuro sem revelar sua identidade, basta criar um login para eles na aba <strong>Authentication &gt; Users</strong> do Supabase.
+        </p>
+      </div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end shrink-0">
+        <button onclick="fecharModal('modal-supabase-guia')" class="px-5 py-2.5 rounded-xl bg-emerald-800 text-amber-300 font-bold text-xs">
+          Entendido
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================
+       SCRIPT PRINCIPAL DA APLICAÇÃO
+  ====================================================== -->
+  <script>
+    // ============================================================================
+    // 1. CONFIGURAÇÃO HÍBRIDA: SUPABASE (PRODUÇÃO) OU LOCALSTORAGE (TESTE LOCAL)
+    // ============================================================================
+    const SUPABASE_URL = "https://aljunpnwmcomgksqrfsgw.supabase.co";       // Cole aqui a Project URL do seu Supabase
+    const SUPABASE_ANON_KEY = "sb_publishable_8tbsCsDeR8XJnFGB_jhwIA_4v-2C8V0";  // Cole aqui a API Key (anon/public) do seu Supabase
+
+    // Senha mestre caso esteja testando sem Supabase configurado (Altere antes de subir ou use Supabase Auth)
+    const SENHA_MOD_LOCAL = "mod2025";
+
+    const USANDO_SUPABASE = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase);
+    const supabaseClient = USANDO_SUPABASE
+      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      : null;
+
+    // Chave limpa de produção (Zero dados de exemplo pré-carregados)
+    const STORAGE_KEY_PROD = 'diretorio_brasil_prod_v1';
+    const COOLDOWN_KEY = 'diretorio_brasil_ultimo_envio_ts';
+    const COOLDOWN_SEGUNDOS = 60;
+
+    let registros = [];
+    let modalidadeFiltroAtual = 'todos';
+    let filtroStatusModeracao = 'pendente';
+    let isModeradorLogado = false;
+    let respostaCaptchaAtual = 0;
+
+    // ============================================================================
+    // 2. CAMADA DE BANCO DE DADOS (SUPABASE + FALLBACK LOCALSTORAGE)
+    // ============================================================================
+    async function carregarRegistrosDoBanco() {
+      if (USANDO_SUPABASE) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('diretorio_itens')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (error) throw error;
+          registros = data || [];
+        } catch (err) {
+          console.error("Erro ao ler do Supabase:", err);
+          exibirToast("Erro ao conectar ao banco na nuvem.", "aviso");
+        }
+      } else {
+        try {
+          const salvo = localStorage.getItem(STORAGE_KEY_PROD);
+          registros = salvo ? JSON.parse(salvo) : [];
+        } catch (e) {
+          registros = [];
+        }
+      }
+      renderizarLista();
+      if (isModeradorLogado) renderizarFilaModeracao();
+    }
+
+    function salvarLocalStorageFallback() {
+      if (!USANDO_SUPABASE) {
+        try {
+          localStorage.setItem(STORAGE_KEY_PROD, JSON.stringify(registros));
+        } catch (e) {
+          console.error("Erro ao gravar storage local:", e);
+        }
+      }
+    }
+
+    // ============================================================================
+    // 3. SISTEMA DE NOTIFICAÇÃO TOAST E MODAIS
+    // ============================================================================
+    function exibirToast(mensagem, tipo = 'sucesso') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const cores = tipo === 'sucesso'
+        ? 'bg-emerald-900 text-white border-l-4 border-amber-400'
+        : 'bg-amber-400 text-emerald-950 border-l-4 border-emerald-950';
+
+      toast.className = `${cores} p-4 rounded-xl shadow-xl flex items-center justify-between gap-3 pointer-events-auto animate-fade-in`;
+      toast.innerHTML = `
+        <div class="flex items-center gap-2.5 text-xs md:text-sm font-bold">
+          <span>${tipo === 'sucesso' ? '✅' : '🛡️'}</span>
+          <span>${escaparHTML(mensagem)}</span>
+        </div>
+      `;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.25s ease';
+        setTimeout(() => toast.remove(), 260);
+      }, 3600);
+    }
+
+    function abrirModal(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.remove('hidden');
+        el.classList.add('flex');
+      }
+    }
+
+    function fecharModal(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+      }
+    }
+
+    function abrirModalGuiaSupabase() {
+      abrirModal('modal-supabase-guia');
+    }
+
+    // ============================================================================
+    // 4. SISTEMA ANTI-SPAM (CAPTCHA MATEMÁTICO, HONEYPOT, COOLDOWN E DUPLICIDADE)
+    // ============================================================================
+    function gerarNovoDesafioCaptcha() {
+      const a = Math.floor(Math.random() * 8) + 2;
+      const b = Math.floor(Math.random() * 7) + 1;
+      respostaCaptchaAtual = a + b;
+      const label = document.getElementById('label-soma-captcha');
+      const input = document.getElementById('input-soma-captcha');
+      if (label) label.textContent = `${a} + ${b} = ?`;
+      if (input) input.value = '';
+    }
+
+    function verificarCooldownEnvio() {
+      if (isModeradorLogado) return { permitido: true };
+      const ultimoTs = Number(localStorage.getItem(COOLDOWN_KEY) || 0);
+      const agora = Date.now();
+      const decorrido = Math.floor((agora - ultimoTs) / 1000);
+      if (decorrido < COOLDOWN_SEGUNDOS) {
+        return {
+          permitido: false,
+          restante: COOLDOWN_SEGUNDOS - decorrido
+        };
+      }
+      return { permitido: true };
+    }
+
+    function verificarDuplicidade(nome, contato, editId) {
+      const nomeNorm = nome.trim().toLowerCase();
+      const contatoNorm = contato.trim().toLowerCase();
+
+      return registros.some(r => {
+        if (editId && String(r.id) === String(editId)) return false;
+        const mesmoNome = r.nome && r.nome.trim().toLowerCase() === nomeNorm;
+        const mesmoContato = r.contato && r.contato.trim().toLowerCase() === contatoNorm;
+        return mesmoNome || mesmoContato;
+      });
+    }
+
+    // ============================================================================
+    // 5. INTEGRAÇÃO COM A API OFICIAL DO IBGE (ESTADOS E MUNICÍPIOS)
+    // ============================================================================
+    async function carregarEstadosIBGE() {
+      const selectFiltro = document.getElementById('filtro-uf');
+      const selectCadastro = document.getElementById('cad-uf');
+
+      try {
+        const res = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome');
+        const estados = await res.json();
+
+        estados.forEach(uf => {
+          const opt1 = document.createElement('option');
+          opt1.value = uf.sigla;
+          opt1.textContent = `${uf.nome} (${uf.sigla})`;
+          selectFiltro.appendChild(opt1);
+
+          const opt2 = document.createElement('option');
+          opt2.value = uf.sigla;
+          opt2.textContent = `${uf.nome} (${uf.sigla})`;
+          selectCadastro.appendChild(opt2);
+        });
+      } catch (e) {
+        console.error("Erro ao buscar UFs no IBGE:", e);
+      }
+    }
+
+    async function carregarCidades(origem, cidadePreSelecionada = '') {
+      const selectUf = document.getElementById(origem === 'filtro' ? 'filtro-uf' : 'cad-uf');
+      const selectCidade = document.getElementById(origem === 'filtro' ? 'filtro-cidade' : 'cad-cidade');
+      const uf = selectUf.value;
+
+      if (origem === 'filtro') {
+        const boxNacionais = document.getElementById('box-incluir-nacionais');
+        if (uf) {
+          boxNacionais.classList.remove('hidden');
+          boxNacionais.classList.add('flex');
+        } else {
+          boxNacionais.classList.add('hidden');
+          boxNacionais.classList.remove('flex');
+        }
+      }
+
+      if (!uf) {
+        selectCidade.innerHTML = `<option value="">${origem === 'filtro' ? 'Selecione o Estado' : 'Selecione o Estado primeiro'}</option>`;
+        selectCidade.disabled = true;
+        if (origem === 'filtro') renderizarLista();
+        return;
+      }
+
+      selectCidade.innerHTML = '<option value="">Carregando municípios...</option>';
+      selectCidade.disabled = true;
+
+      try {
+        const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`);
+        const municipios = await res.json();
+
+        selectCidade.innerHTML = `<option value="">${origem === 'filtro' ? 'Todos os Municípios (' + uf + ')' : 'Selecione o Município'}</option>`;
+        municipios.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.nome;
+          opt.textContent = m.nome;
+          selectCidade.appendChild(opt);
+        });
+
+        selectCidade.disabled = false;
+        selectCidade.classList.remove('bg-slate-100', 'text-slate-500');
+        selectCidade.classList.add('bg-white', 'text-slate-800');
+
+        if (cidadePreSelecionada) {
+          selectCidade.value = cidadePreSelecionada;
+        }
+        if (origem === 'filtro') renderizarLista();
+      } catch (e) {
+        console.error("Erro ao buscar municípios:", e);
+        selectCidade.innerHTML = '<option value="">Erro ao carregar</option>';
+      }
+    }
+
+    // ============================================================================
+    // 6. LISTAGEM PÚBLICA (APENAS APROVADOS) E FILTROS
+    // ============================================================================
+    function obterItensPublicosAprovados() {
+      return registros.filter(r => r.status === 'aprovado' || (r.status === 'denunciado' && !isModeradorLogado));
+    }
+
+    function atualizarContadoresGerais() {
+      const aprovados = registros.filter(r => r.status === 'aprovado' || r.status === 'denunciado');
+      const pendentes = registros.filter(r => r.status === 'pendente');
+      const denunciados = registros.filter(r => r.status === 'denunciado');
+
+      document.getElementById('count-todos').textContent = aprovados.length;
+      document.getElementById('count-local').textContent = aprovados.filter(r => r.tipo === 'local').length;
+      document.getElementById('count-marketplace').textContent = aprovados.filter(r => r.tipo === 'marketplace').length;
+      document.getElementById('count-influenciador').textContent = aprovados.filter(r => r.tipo === 'influenciador').length;
+      document.getElementById('badge-topo-mobile').textContent = `${aprovados.length} ativos`;
+
+      // Contadores da Moderação
+      const totalFilaAlerta = pendentes.length + denunciados.length;
+      document.getElementById('badge-desk-pendentes').textContent = totalFilaAlerta;
+      document.getElementById('badge-mob-pendentes').textContent = totalFilaAlerta;
+      document.getElementById('count-mod-pendente').textContent = pendentes.length;
+      document.getElementById('count-mod-denunciado').textContent = denunciados.length;
+      document.getElementById('count-mod-aprovado').textContent = registros.filter(r => r.status === 'aprovado').length;
+    }
+
+    function selecionarModalidadeFiltro(modalidade) {
+      modalidadeFiltroAtual = modalidade;
+      const botoes = {
+        todos: document.getElementById('pill-todos'),
+        local: document.getElementById('pill-local'),
+        marketplace: document.getElementById('pill-marketplace'),
+        influenciador: document.getElementById('pill-influenciador')
+      };
+
+      Object.keys(botoes).forEach(k => {
+        if (k === modalidade) {
+          botoes[k].className = "pill-btn shrink-0 px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm transition flex items-center gap-2 bg-amber-400 text-emerald-950 shadow-sm ring-2 ring-amber-200";
+        } else {
+          botoes[k].className = "pill-btn shrink-0 px-4 py-2.5 rounded-xl font-semibold text-xs md:text-sm transition flex items-center gap-2 bg-emerald-950/50 hover:bg-emerald-950/80 text-emerald-100 border border-emerald-700/70";
+        }
+      });
+
+      const avisoAlcance = document.getElementById('aviso-alcance-filtro');
+      if (modalidade === 'marketplace' || modalidade === 'influenciador') {
+        avisoAlcance.classList.remove('hidden');
+      } else {
+        avisoAlcance.classList.add('hidden');
+      }
+
+      renderizarLista();
+    }
+
+    function renderizarLista() {
+      atualizarContadoresGerais();
+
+      const ufFiltro = document.getElementById('filtro-uf').value;
+      const cidadeFiltro = document.getElementById('filtro-cidade').value;
+      const categoriaFiltro = document.getElementById('filtro-categoria').value;
+      const textoFiltro = document.getElementById('filtro-texto').value.trim().toLowerCase();
+      const incluirNacionais = document.getElementById('check-incluir-nacionais').checked;
+
+      // Visitantes veem apenas aprovados (ou com denúncia pendente de análise)
+      const basePublica = registros.filter(r => r.status === 'aprovado' || r.status === 'denunciado');
+
+      const filtrados = basePublica.filter(item => {
+        const matchTipo = modalidadeFiltroAtual === 'todos' || item.tipo === modalidadeFiltroAtual;
+
+        let matchLocal = true;
+        if (ufFiltro) {
+          const semEstado = !item.uf || item.uf === '';
+          if (item.uf === ufFiltro) {
+            matchLocal = !cidadeFiltro || item.cidade === cidadeFiltro;
+          } else if (semEstado && incluirNacionais && item.tipo !== 'local') {
+            matchLocal = true;
+          } else {
+            matchLocal = false;
+          }
+        }
+
+        const matchCat = !categoriaFiltro || item.categoria === categoriaFiltro;
+        const matchTexto = !textoFiltro ||
+          item.nome.toLowerCase().includes(textoFiltro) ||
+          (item.descricao && item.descricao.toLowerCase().includes(textoFiltro)) ||
+          (item.contato && item.contato.toLowerCase().includes(textoFiltro)) ||
+          (item.plataforma && item.plataforma.toLowerCase().includes(textoFiltro)) ||
+          (item.cidade && item.cidade.toLowerCase().includes(textoFiltro));
+
+        return matchTipo && matchLocal && matchCat && matchTexto;
+      });
+
+      const container = document.getElementById('lista-comercios');
+      const contador = document.getElementById('contador-resultados');
+      contador.textContent = `${filtrados.length} estabelecimento(s) / perfil(is) listado(s)`;
+      container.innerHTML = '';
+
+      if (filtrados.length === 0) {
+        const semNenhumAprovadoNoBanco = basePublica.length === 0;
+        container.innerHTML = `
+          <div class="col-span-full bg-white p-8 md:p-12 rounded-2xl border border-slate-200 text-center space-y-3 shadow-xs">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-center mx-auto text-2xl">
+              🇧🇷
+            </div>
+            <h4 class="font-extrabold text-slate-800 text-base md:text-lg">
+              ${semNenhumAprovadoNoBanco ? 'O Diretório está pronto para receber os primeiros cadastros!' : 'Nenhum resultado encontrado para estes filtros'}
+            </h4>
+            <p class="text-xs md:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+              ${semNenhumAprovadoNoBanco
+                ? 'Colabore indicando um comércio local da sua cidade, uma loja online de marketplace ou um criador de conteúdo.'
+                : 'Tente ampliar sua busca limpando os filtros ou cadastre uma nova sugestão nesta região.'}
+            </p>
+            <div class="pt-3 flex flex-wrap justify-center gap-3">
+              ${!semNenhumAprovadoNoBanco ? `
+                <button onclick="limparFiltros()" class="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                  Limpar Filtros
+                </button>
+              ` : ''}
+              <button onclick="alternarAba('cadastro')" class="px-5 py-2.5 rounded-xl text-xs font-extrabold bg-amber-400 hover:bg-amber-300 text-emerald-950 shadow-xs transition">
+                + Cadastrar Primeiro Item
+              </button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      filtrados.forEach(item => {
+        let badgeTipo = '';
+        let rotuloAcao = 'Acessar / Contato';
+
+        if (item.tipo === 'local') {
+          badgeTipo = `<span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-900 text-[11px] font-extrabold px-2.5 py-1 rounded-lg border border-emerald-300">🏪 Comércio Local</span>`;
+          rotuloAcao = 'Ver Contato / Local';
+        } else if (item.tipo === 'marketplace') {
+          badgeTipo = `<span class="inline-flex items-center gap-1 bg-amber-100 text-amber-950 text-[11px] font-extrabold px-2.5 py-1 rounded-lg border border-amber-300">🛒 ${escaparHTML(item.plataforma || 'Marketplace')}</span>`;
+          rotuloAcao = `Abrir Loja (${escaparHTML(item.plataforma || 'Online')})`;
+        } else {
+          badgeTipo = `<span class="inline-flex items-center gap-1 bg-green-900 text-amber-300 text-[11px] font-extrabold px-2.5 py-1 rounded-lg">📢 ${escaparHTML(item.plataforma || 'Criador')}</span>`;
+          rotuloAcao = `Ver Perfil (${escaparHTML(item.plataforma || 'Social')})`;
+        }
+
+        const badgeLocalizacao = (item.uf && item.cidade)
+          ? `<span class="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">📍 ${escaparHTML(item.cidade)} - ${escaparHTML(item.uf)}</span>`
+          : `<span class="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">🇧🇷 Alcance Nacional</span>`;
+
+        const controlesRapidosModerador = isModeradorLogado ? `
+          <div class="mt-3 pt-2.5 border-t border-amber-200 bg-amber-50/70 -mx-5 -mb-5 p-3 rounded-b-2xl flex items-center justify-between gap-2">
+            <span class="text-[10px] font-extrabold uppercase text-emerald-950">🛡️ Admin:</span>
+            <div class="flex items-center gap-1.5">
+              <button onclick="iniciarEdicaoItem('${item.id}')" class="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-[11px] font-bold text-slate-700 hover:bg-slate-100">
+                ✏️ Editar
+              </button>
+              <button onclick="alterarStatusItem('${item.id}', 'pendente')" class="px-2.5 py-1 rounded-lg bg-amber-300 text-[11px] font-bold text-emerald-950 hover:bg-amber-400">
+                ⏸️ Ocultar
+              </button>
+              <button onclick="excluirItemDefinitivo('${item.id}')" class="px-2.5 py-1 rounded-lg bg-red-600 text-[11px] font-bold text-white hover:bg-red-700">
+                🗑️ Excluir
+              </button>
+            </div>
+          </div>
+        ` : '';
+
+        const card = document.createElement('div');
+        card.className = "bg-white rounded-2xl p-5 shadow-xs hover:shadow-md border border-slate-200 transition flex flex-col justify-between animate-fade-in";
+        card.innerHTML = `
+          <div>
+            <div class="flex flex-wrap justify-between items-center gap-1.5 mb-3">
+              ${badgeTipo}
+              ${badgeLocalizacao}
+            </div>
+
+            <div class="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-1">
+              ${escaparHTML(item.categoria)}
+            </div>
+
+            <h3 class="font-extrabold text-slate-900 text-base md:text-lg leading-snug mb-2">
+              ${escaparHTML(item.nome)}
+            </h3>
+
+            <p class="text-xs md:text-sm text-slate-600 leading-relaxed mb-4">
+              ${escaparHTML(item.descricao)}
+            </p>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 space-y-2.5">
+            ${item.endereco ? `
+              <div class="text-xs text-slate-500 flex items-start gap-1.5">
+                <span class="shrink-0">🗺️</span>
+                <span class="truncate">${escaparHTML(item.endereco)}</span>
+              </div>
+            ` : ''}
+
+            <div class="flex items-center justify-between gap-2 pt-1">
+              <button onclick="acaoContatoCard('${escaparAtributo(item.contato)}')" class="flex-1 bg-emerald-800 hover:bg-emerald-900 text-amber-300 font-bold text-xs py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-xs">
+                <span>🔗 ${rotuloAcao}</span>
+              </button>
+
+              <button onclick="copiarContato('${escaparAtributo(item.contato)}')" title="Copiar contato ou link" class="p-2.5 rounded-xl border border-slate-200 hover:bg-amber-50 text-slate-600 hover:text-emerald-900 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+              </button>
+            </div>
+
+            <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+              <span class="truncate max-w-[60%] font-medium">${escaparHTML(item.contato)}</span>
+              <button onclick="abrirModalReportar('${item.id}', '${escaparAtributo(item.nome)}')" class="text-slate-400 hover:text-red-600 underline transition shrink-0">
+                Solicitar remoção / Reportar
+              </button>
+            </div>
+
+            ${controlesRapidosModerador}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // ============================================================================
+    // 7. CADASTRO DINÂMICO E ENVIO PARA FILA DE MODERAÇÃO
+    // ============================================================================
+    function mudarTipoCadastro(tipo) {
+      document.getElementById('cad-tipo').value = tipo;
+      const botoes = {
+        local: document.getElementById('btn-tipo-local'),
+        marketplace: document.getElementById('btn-tipo-marketplace'),
+        influenciador: document.getElementById('btn-tipo-influenciador')
+      };
+
+      Object.keys(botoes).forEach(k => {
+        if (k === tipo) {
+          botoes[k].className = "p-3.5 rounded-xl border-2 border-emerald-700 bg-emerald-50/80 text-left transition flex sm:flex-col items-center sm:items-start gap-3 sm:gap-1.5 ring-2 ring-amber-400";
+        } else {
+          botoes[k].className = "p-3.5 rounded-xl border-2 border-slate-200 hover:border-emerald-400 bg-white text-left transition flex sm:flex-col items-center sm:items-start gap-3 sm:gap-1.5";
+        }
+      });
+
+      const labelNome = document.getElementById('label-cad-nome');
+      const inputNome = document.getElementById('cad-nome');
+      const boxPlataforma = document.getElementById('box-subtipo-plataforma');
+      const labelPlataforma = document.getElementById('label-cad-plataforma');
+      const selectPlataforma = document.getElementById('cad-plataforma');
+      const boxContato = document.getElementById('box-contato');
+      const labelContato = document.getElementById('label-cad-contato');
+      const inputContato = document.getElementById('cad-contato');
+
+      const tituloLocal = document.getElementById('titulo-secao-local');
+      const badgeOpcionalLocal = document.getElementById('badge-opcional-local');
+      const selectUf = document.getElementById('cad-uf');
+      const selectCidade = document.getElementById('cad-cidade');
+      const astUf = document.getElementById('ast-uf');
+      const astCidade = document.getElementById('ast-cidade');
+      const boxEndereco = document.getElementById('box-cad-endereco');
+
+      if (tipo === 'local') {
+        labelNome.textContent = "Nome do Comércio / Estabelecimento *";
+        inputNome.placeholder = "Ex: Padaria e Confeitaria União";
+        boxPlataforma.classList.add('hidden');
+        boxContato.className = "md:col-span-1";
+        labelContato.textContent = "Instagram, WhatsApp ou Telefone *";
+        inputContato.placeholder = "Ex: @padariauniao ou (11) 98888-7777";
+
+        tituloLocal.textContent = "📍 Localização Física (Obrigatória)";
+        badgeOpcionalLocal.classList.add('hidden');
+        selectUf.required = true;
+        selectCidade.required = true;
+        astUf.classList.remove('hidden');
+        astCidade.classList.remove('hidden');
+        boxEndereco.classList.remove('hidden');
+
+      } else if (tipo === 'marketplace') {
+        labelNome.textContent = "Nome da Loja Online / E-commerce *";
+        inputNome.placeholder = "Ex: Loja Raízes Brasileiras";
+        boxPlataforma.classList.remove('hidden');
+        labelPlataforma.textContent = "Plataforma Principal *";
+        selectPlataforma.innerHTML = `
+          <option value="Shopee">Shopee</option>
+          <option value="Mercado Livre">Mercado Livre</option>
+          <option value="Site Próprio">Site Próprio / E-commerce</option>
+          <option value="Amazon">Amazon</option>
+          <option value="Instagram Shopping">Instagram / WhatsApp</option>
+          <option value="Elo7 / Enjoei">Elo7 / Enjoei / Outros</option>
+        `;
+        boxContato.className = "md:col-span-2";
+        labelContato.textContent = "Link da Loja ou @perfil *";
+        inputContato.placeholder = "Ex: https://shopee.com.br/minhaloja ou @minhaloja";
+
+        tituloLocal.textContent = "📍 Estado/Cidade de Origem (Opcional)";
+        badgeOpcionalLocal.classList.remove('hidden');
+        selectUf.required = false;
+        selectCidade.required = false;
+        astUf.classList.add('hidden');
+        astCidade.classList.add('hidden');
+        boxEndereco.classList.add('hidden');
+
+      } else {
+        labelNome.textContent = "Nome do Influenciador, Canal ou Coletivo *";
+        inputNome.placeholder = "Ex: Canal História em Debate";
+        boxPlataforma.classList.remove('hidden');
+        labelPlataforma.textContent = "Rede Social Principal *";
+        selectPlataforma.innerHTML = `
+          <option value="Instagram">Instagram</option>
+          <option value="YouTube">YouTube</option>
+          <option value="TikTok">TikTok</option>
+          <option value="X / Bluesky">X / Bluesky / Threads</option>
+          <option value="Podcast / Twitch">Podcast / Twitch</option>
+        `;
+        boxContato.className = "md:col-span-2";
+        labelContato.textContent = "@usuario ou Link do Perfil/Canal *";
+        inputContato.placeholder = "Ex: @historiaemdebate ou link do canal";
+
+        tituloLocal.textContent = "📍 Estado/Cidade do Criador (Opcional)";
+        badgeOpcionalLocal.classList.remove('hidden');
+        selectUf.required = false;
+        selectCidade.required = false;
+        astUf.classList.add('hidden');
+        astCidade.classList.add('hidden');
+        boxEndereco.classList.add('hidden');
+      }
+    }
+
+    async function salvarCadastro(event) {
+      event.preventDefault();
+
+      // 1. Verificar Honeypot invisível (Se preenchido por bot, ignora silenciosamente)
+      const trap = document.getElementById('cad-website-confirm').value;
+      if (trap && trap.trim() !== '') {
+        document.getElementById('form-cadastro').reset();
+        alternarAba('busca');
+        return;
+      }
+
+      const editId = document.getElementById('cad-edit-id').value;
+
+      // 2. Verificar desafio matemático (Exceto se for edição direta de moderador)
+      if (!editId) {
+        const valorCaptcha = Number(document.getElementById('input-soma-captcha').value);
+        if (valorCaptcha !== respostaCaptchaAtual) {
+          exibirToast('Soma incorreta na verificação anti-robô. Tente novamente.', 'aviso');
+          gerarNovoDesafioCaptcha();
+          return;
+        }
+
+        // 3. Verificar Rate Limit (Cooldown de 60 segundos por navegador)
+        const statusCooldown = verificarCooldownEnvio();
+        if (!statusCooldown.permitido) {
+          exibirToast(`Aguarde ${statusCooldown.restante}s antes de enviar outro cadastro.`, 'aviso');
+          return;
+        }
+      }
+
+      const tipo = document.getElementById('cad-tipo').value;
+      const nome = document.getElementById('cad-nome').value.trim();
+      const categoria = document.getElementById('cad-categoria').value;
+      const plataforma = tipo === 'local' ? 'Loja Física' : document.getElementById('cad-plataforma').value;
+      const contato = document.getElementById('cad-contato').value.trim();
+      const uf = document.getElementById('cad-uf').value;
+      const cidade = document.getElementById('cad-cidade').value;
+      const endereco = tipo === 'local' ? document.getElementById('cad-endereco').value.trim() : '';
+      const descricao = document.getElementById('cad-descricao').value.trim();
+
+      if (tipo === 'local' && (!uf || !cidade)) {
+        exibirToast('Para Comércio Local, selecione o Estado e o Município.', 'aviso');
+        return;
+      }
+
+      // 4. Verificar Duplicidade
+      if (verificarDuplicidade(nome, contato, editId)) {
+        exibirToast('Este estabelecimento ou @contato já consta no diretório ou na fila de aprovação.', 'aviso');
+        return;
+      }
+
+      // Se moderador estiver editando ou cadastrando diretamente, já entra aprovado
+      const statusInicial = isModeradorLogado ? 'aprovado' : 'pendente';
+
+      if (editId) {
+        // Atualização de item existente pelo Moderador
+        if (USANDO_SUPABASE) {
+          const { error } = await supabaseClient
+            .from('diretorio_itens')
+            .update({ tipo, nome, categoria, plataforma, uf, cidade, endereco, contato, descricao })
+            .eq('id', editId);
+          if (error) {
+            exibirToast('Erro ao salvar alterações no banco.', 'aviso');
+            return;
+          }
+        } else {
+          const idx = registros.findIndex(r => String(r.id) === String(editId));
+          if (idx > -1) {
+            registros[idx] = { ...registros[idx], tipo, nome, categoria, plataforma, uf, cidade, endereco, contato, descricao };
+            salvarLocalStorageFallback();
+          }
+        }
+        limparEstadoEdicaoFormulario();
+        await carregarRegistrosDoBanco();
+        alternarAba('moderacao');
+        exibirToast(`Dados de "${nome}" atualizados com sucesso!`);
+        return;
+      }
+
+      // Novo Cadastro
+      const payload = {
+        tipo,
+        nome,
+        categoria,
+        plataforma,
+        uf,
+        cidade,
+        endereco,
+        contato,
+        descricao,
+        status: statusInicial,
+        motivo_denuncia: null
+      };
+
+      if (USANDO_SUPABASE) {
+        const { error } = await supabaseClient.from('diretorio_itens').insert([payload]);
+        if (error) {
+          exibirToast('Não foi possível enviar o cadastro agora.', 'aviso');
+          return;
+        }
+      } else {
+        registros.unshift({ id: Date.now(), ...payload, created_at: new Date().toISOString() });
+        salvarLocalStorageFallback();
+      }
+
+      if (!isModeradorLogado) {
+        localStorage.setItem(COOLDOWN_KEY, String(Date.now()));
+      }
+
+      limparEstadoEdicaoFormulario();
+      await carregarRegistrosDoBanco();
+      alternarAba('busca');
+
+      if (statusInicial === 'aprovado') {
+        exibirToast(`"${nome}" publicado diretamente (Modo Moderador)!`);
+      } else {
+        exibirToast(`Recebido! "${nome}" foi enviado para a fila de aprovação dos colaboradores.`);
+      }
+    }
+
+    function limparEstadoEdicaoFormulario() {
+      document.getElementById('form-cadastro').reset();
+      document.getElementById('cad-edit-id').value = '';
+      document.getElementById('titulo-form-cadastro').textContent = 'Sugerir Cadastro no Diretório';
+      document.getElementById('texto-btn-submit').textContent = isModeradorLogado ? 'Publicar Direto no Ar' : 'Enviar para Aprovação';
+      document.getElementById('box-desafio-antispam').classList.toggle('hidden', isModeradorLogado);
+      document.getElementById('input-soma-captcha').required = !isModeradorLogado;
+      document.getElementById('cad-cidade').innerHTML = '<option value="">Selecione o Estado primeiro</option>';
+      document.getElementById('cad-cidade').disabled = true;
+      mudarTipoCadastro('local');
+      gerarNovoDesafioCaptcha();
+    }
+
+    function cancelarEdicaoOuVoltar() {
+      const editando = document.getElementById('cad-edit-id').value;
+      limparEstadoEdicaoFormulario();
+      alternarAba(editando && isModeradorLogado ? 'moderacao' : 'busca');
+    }
+
+    // ============================================================================
+    // 8. DENÚNCIAS / PEDIDOS DE REMOÇÃO (LGPD & MARCO CIVIL)
+    // ============================================================================
+    function abrirModalReportar(id, nome) {
+      document.getElementById('report-item-id').value = id;
+      document.getElementById('subtitulo-modal-reportar').textContent = `Item: ${nome}`;
+      document.getElementById('report-motivo').value = '';
+      abrirModal('modal-reportar');
+    }
+
+    async function enviarSolicitacaoRemocao(event) {
+      event.preventDefault();
+      const id = document.getElementById('report-item-id').value;
+      const tipoMotivo = document.getElementById('report-tipo').value;
+      const detalhes = document.getElementById('report-motivo').value.trim();
+      const resumo = `[${tipoMotivo}] ${detalhes}`;
+
+      if (USANDO_SUPABASE) {
+        const { error } = await supabaseClient
+          .from('diretorio_itens')
+          .update({ status: 'denunciado', motivo_denuncia: resumo })
+          .eq('id', id);
+        if (error) {
+          exibirToast('Erro ao registrar solicitação.', 'aviso');
+          return;
+        }
+      } else {
+        const idx = registros.findIndex(r => String(r.id) === String(id));
+        if (idx > -1) {
+          registros[idx].status = 'denunciado';
+          registros[idx].motivo_denuncia = resumo;
+          salvarLocalStorageFallback();
+        }
+      }
+
+      fecharModal('modal-reportar');
+      await carregarRegistrosDoBanco();
+      exibirToast('Solicitação enviada! Os colaboradores analisarão na fila de moderação.');
+    }
+
+    // ============================================================================
+    // 9. AUTENTICAÇÃO E PAINEL DE MODERAÇÃO (OPÇÃO 1)
+    // ============================================================================
+    function acaoBotaoRodapeModeracao() {
+      if (isModeradorLogado) {
+        alternarAba('moderacao');
+        return;
+      }
+
+      const aviso = document.getElementById('aviso-modo-login');
+      const boxEmail = document.getElementById('box-login-email');
+      const inputEmail = document.getElementById('login-email');
+
+      if (USANDO_SUPABASE) {
+        aviso.innerHTML = `Conectado ao <strong>Supabase Auth</strong>. Entre com seu e-mail e senha de colaborador.`;
+        boxEmail.classList.remove('hidden');
+        inputEmail.required = true;
+      } else {
+        aviso.innerHTML = `Modo Local ativo. Digite a senha de moderador (Padrão: <code>${SENHA_MOD_LOCAL}</code>) para gerenciar a fila.`;
+        boxEmail.classList.add('hidden');
+        inputEmail.required = false;
+      }
+
+      document.getElementById('login-senha').value = '';
+      abrirModal('modal-login');
+    }
+
+    async function realizarLoginModerador(event) {
+      event.preventDefault();
+      const email = document.getElementById('login-email').value.trim();
+      const senha = document.getElementById('login-senha').value;
+
+      if (USANDO_SUPABASE) {
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+        if (error) {
+          exibirToast('Credenciais inválidas no Supabase Auth.', 'aviso');
+          return;
+        }
+      } else {
+        if (senha !== SENHA_MOD_LOCAL) {
+          exibirToast('Senha de moderador incorreta.', 'aviso');
+          return;
+        }
+      }
+
+      ativarInterfaceModerador(true);
+      fecharModal('modal-login');
+      await carregarRegistrosDoBanco();
+      alternarAba('moderacao');
+      exibirToast('Modo Moderador ativado!');
+    }
+
+    async function encerrarSessaoModerador() {
+      if (USANDO_SUPABASE) {
+        await supabaseClient.auth.signOut();
+      }
+      ativarInterfaceModerador(false);
+      alternarAba('busca');
+      exibirToast('Sessão de moderador encerrada.', 'aviso');
+    }
+
+    function ativarInterfaceModerador(ativo) {
+      isModeradorLogado = ativo;
+      document.getElementById('badge-status-mod').classList.toggle('hidden', !ativo);
+      document.getElementById('btn-desk-moderacao').classList.toggle('hidden', !ativo);
+      document.getElementById('btn-desk-moderacao').classList.toggle('flex', ativo);
+
+      const navMob = document.getElementById('grid-nav-mobile');
+      const btnMobMod = document.getElementById('btn-mob-moderacao');
+      if (ativo) {
+        navMob.classList.remove('grid-cols-2');
+        navMob.classList.add('grid-cols-3');
+        btnMobMod.classList.remove('hidden');
+        btnMobMod.classList.add('flex');
+        document.getElementById('btn-rodape-mod').innerHTML = '🛡️ Abrir Painel da Moderação (Ativo)';
+      } else {
+        navMob.classList.add('grid-cols-2');
+        navMob.classList.remove('grid-cols-3');
+        btnMobMod.classList.add('hidden');
+        btnMobMod.classList.remove('flex');
+        document.getElementById('btn-rodape-mod').innerHTML = '🔒 Área da Moderação / Colaboradores';
+      }
+
+      document.getElementById('badge-modo-banco').textContent = USANDO_SUPABASE ? '☁️ Supabase Cloud Ativo' : '💾 Banco Local (Navegador)';
+      limparEstadoEdicaoFormulario();
+      renderizarLista();
+    }
+
+    function filtrarAbaModeracao(status) {
+      filtroStatusModeracao = status;
+      const abas = ['pendente', 'denunciado', 'aprovado'];
+      abas.forEach(s => {
+        const btn = document.getElementById(`subtab-${s}`);
+        if (s === status) {
+          btn.className = "px-4 py-2.5 rounded-xl font-extrabold text-xs md:text-sm bg-amber-400 text-emerald-950 shadow-sm flex items-center gap-2 shrink-0";
+        } else {
+          btn.className = "px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 flex items-center gap-2 shrink-0";
+        }
+      });
+      renderizarFilaModeracao();
+    }
+
+    function renderizarFilaModeracao() {
+      atualizarContadoresGerais();
+      const container = document.getElementById('lista-moderacao');
+      const itens = registros.filter(r => r.status === filtroStatusModeracao);
+      container.innerHTML = '';
+
+      if (itens.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full bg-white p-10 rounded-2xl border border-slate-200 text-center space-y-2">
+            <div class="text-2xl">✨</div>
+            <h4 class="font-bold text-slate-800 text-sm md:text-base">Nenhum item nesta fila (${filtroStatusModeracao})</h4>
+            <p class="text-xs text-slate-500">Tudo em dia por aqui!</p>
+          </div>
+        `;
+        return;
+      }
+
+      itens.forEach(item => {
+        const localStr = (item.uf && item.cidade) ? `${item.cidade} - ${item.uf}` : 'Alcance Nacional';
+        const alertaDenuncia = item.motivo_denuncia ? `
+          <div class="mb-3 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-900">
+            <strong class="block uppercase text-[10px] tracking-wider text-red-700 mb-0.5">🚩 Motivo do Reporte / Pedido de Remoção:</strong>
+            ${escaparHTML(item.motivo_denuncia)}
+          </div>
+        ` : '';
+
+        const card = document.createElement('div');
+        card.className = "bg-white rounded-2xl p-5 shadow-xs border-2 border-slate-200 flex flex-col justify-between gap-4";
+        card.innerHTML = `
+          <div>
+            <div class="flex flex-wrap justify-between items-center gap-2 mb-2">
+              <span class="text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-950">
+                ${escaparHTML(item.tipo.toUpperCase())} • ${escaparHTML(item.plataforma || 'Local')}
+              </span>
+              <span class="text-xs font-bold text-slate-500">📍 ${escaparHTML(localStr)}</span>
+            </div>
+
+            ${alertaDenuncia}
+
+            <div class="text-[11px] font-bold uppercase text-emerald-700">${escaparHTML(item.categoria)}</div>
+            <h3 class="font-extrabold text-slate-900 text-base md:text-lg mb-1">${escaparHTML(item.nome)}</h3>
+            <p class="text-xs text-slate-600 mb-3">${escaparHTML(item.descricao)}</p>
+
+            <div class="text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-1">
+              <div><strong>Contato/Link:</strong> <span class="text-emerald-800 font-semibold">${escaparHTML(item.contato)}</span></div>
+              ${item.endereco ? `<div><strong>Endereço:</strong> ${escaparHTML(item.endereco)}</div>` : ''}
+            </div>
+          </div>
+
+          <!-- Botões Grandes para Moderação Rápida no Celular -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+            ${item.status !== 'aprovado' ? `
+              <button onclick="alterarStatusItem('${item.id}', 'aprovado')" class="w-full py-3 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-xs transition">
+                ✅ Aprovar Publicação
+              </button>
+            ` : `
+              <button onclick="alterarStatusItem('${item.id}', 'pendente')" class="w-full py-3 px-3 rounded-xl bg-amber-300 hover:bg-amber-400 text-emerald-950 font-extrabold text-xs flex items-center justify-center gap-1.5 transition">
+                ⏸️ Mover p/ Pendente
+              </button>
+            `}
+
+            <button onclick="iniciarEdicaoItem('${item.id}')" class="w-full py-3 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center gap-1.5 transition">
+              ✏️ Editar Dados
+            </button>
+
+            <button onclick="excluirItemDefinitivo('${item.id}')" class="w-full py-3 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition">
+              🗑️ Recusar / Excluir
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    async function alterarStatusItem(id, novoStatus) {
+      if (USANDO_SUPABASE) {
+        const { error } = await supabaseClient
+          .from('diretorio_itens')
+          .update({ status: novoStatus, motivo_denuncia: null })
+          .eq('id', id);
+        if (error) {
+          exibirToast('Erro ao atualizar status no banco.', 'aviso');
+          return;
+        }
+      } else {
+        const idx = registros.findIndex(r => String(r.id) === String(id));
+        if (idx > -1) {
+          registros[idx].status = novoStatus;
+          registros[idx].motivo_denuncia = null;
+          salvarLocalStorageFallback();
+        }
+      }
+      await carregarRegistrosDoBanco();
+      exibirToast(novoStatus === 'aprovado' ? 'Item aprovado e publicado no diretório!' : 'Item movido para a fila pendente.');
+    }
+
+    async function excluirItemDefinitivo(id) {
+      if (USANDO_SUPABASE) {
+        const { error } = await supabaseClient.from('diretorio_itens').delete().eq('id', id);
+        if (error) {
+          exibirToast('Erro ao excluir registro.', 'aviso');
+          return;
+        }
+      } else {
+        registros = registros.filter(r => String(r.id) !== String(id));
+        salvarLocalStorageFallback();
+      }
+      await carregarRegistrosDoBanco();
+      exibirToast('Registro excluído permanentemente.', 'aviso');
+    }
+
+    async function iniciarEdicaoItem(id) {
+      const item = registros.find(r => String(r.id) === String(id));
+      if (!item) return;
+
+      alternarAba('cadastro');
+      mudarTipoCadastro(item.tipo);
+
+      document.getElementById('cad-edit-id').value = item.id;
+      document.getElementById('titulo-form-cadastro').textContent = `Editando: ${item.nome}`;
+      document.getElementById('texto-btn-submit').textContent = 'Salvar Alterações';
+      document.getElementById('box-desafio-antispam').classList.add('hidden');
+      document.getElementById('input-soma-captcha').required = false;
+
+      document.getElementById('cad-nome').value = item.nome || '';
+      document.getElementById('cad-categoria').value = item.categoria || '';
+      if (item.tipo !== 'local' && item.plataforma) {
+        document.getElementById('cad-plataforma').value = item.plataforma;
+      }
+      document.getElementById('cad-contato').value = item.contato || '';
+      document.getElementById('cad-endereco').value = item.endereco || '';
+      document.getElementById('cad-descricao').value = item.descricao || '';
+
+      const selectUf = document.getElementById('cad-uf');
+      selectUf.value = item.uf || '';
+      if (item.uf) {
+        await carregarCidades('cadastro', item.cidade || '');
+      }
+    }
+
+    // ============================================================================
+    // 10. UTILITÁRIOS DE NAVEGAÇÃO E SEGURANÇA XSS
+    // ============================================================================
+    function acaoContatoCard(contato) {
+      if (!contato) return;
+      const limpo = contato.trim();
+      if (limpo.startsWith('http://') || limpo.startsWith('https://')) {
+        window.open(limpo, '_blank', 'noopener,noreferrer');
+      } else if (limpo.startsWith('@')) {
+        window.open(`https://instagram.com/${limpo.substring(1)}`, '_blank', 'noopener,noreferrer');
+      } else {
+        copiarContato(limpo);
+      }
+    }
+
+    function copiarContato(texto) {
+      const temp = document.createElement('textarea');
+      temp.value = texto;
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand('copy');
+      document.body.removeChild(temp);
+      exibirToast(`Copiado: ${texto}`);
+    }
+
+    function limparFiltros() {
+      document.getElementById('filtro-uf').value = '';
+      const selectCidade = document.getElementById('filtro-cidade');
+      selectCidade.innerHTML = '<option value="">Selecione o Estado</option>';
+      selectCidade.disabled = true;
+      selectCidade.classList.add('bg-slate-100', 'text-slate-500');
+      document.getElementById('filtro-categoria').value = '';
+      document.getElementById('filtro-texto').value = '';
+      document.getElementById('box-incluir-nacionais').classList.add('hidden');
+      selecionarModalidadeFiltro('todos');
+    }
+
+    function alternarAba(aba) {
+      const secBusca = document.getElementById('aba-busca');
+      const secCadastro = document.getElementById('aba-cadastro');
+      const secModeracao = document.getElementById('aba-moderacao');
+
+      secBusca.classList.toggle('hidden', aba !== 'busca');
+      secCadastro.classList.toggle('hidden', aba !== 'cadastro');
+      secModeracao.classList.toggle('hidden', aba !== 'moderacao');
+
+      if (aba === 'moderacao') {
+        renderizarFilaModeracao();
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function escaparHTML(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escaparAtributo(str) {
+      if (!str) return '';
+      return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    // Inicialização
+    window.onload = async function() {
+      gerarNovoDesafioCaptcha();
+      carregarEstadosIBGE();
+
+      if (USANDO_SUPABASE) {
+        const { data } = await supabaseClient.auth.getSession();
+        if (data && data.session) {
+          ativarInterfaceModerador(true);
+        }
+      }
+
+      await carregarRegistrosDoBanco();
+    };
+  </script>
+</body>
+</html>
